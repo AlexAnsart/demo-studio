@@ -4,9 +4,13 @@
 
 No video editor. No manual screen recording. Tag a skill in Cursor or Claude Code, describe what to show, and get back a zoom-composited `.mp4` with optional voiceover and burned-in captions.
 
-The preview below was **recorded by this repo's own [`film-demo`](skills/film-demo) skill** — not edited by hand:
+The launch clip below was **produced by this repo's own [`produce-video`](skills/produce-video/SKILL.md) skill** — narrated, captioned, zero hand-editing:
 
-<video src="https://raw.githubusercontent.com/AlexAnsart/demo-studio/main/docs/assets/hello-demo.mp4" autoplay loop muted playsinline width="100%"></video>
+<video src="https://raw.githubusercontent.com/AlexAnsart/demo-studio/main/docs/assets/promo.mp4" controls playsinline width="100%"></video>
+
+The preview it delivers inside that session was recorded the same way with [`film-demo`](skills/film-demo/SKILL.md):
+
+![hello-demo — task app recorded by film-demo](docs/assets/hello-demo.gif)
 
 ---
 

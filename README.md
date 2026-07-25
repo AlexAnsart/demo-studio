@@ -1,142 +1,115 @@
 # demo-studio
 
-Agent skills that turn a running web app into a polished, narrated demo video — no video editor, no manual screen recording.
+**Polished product demos — recorded by your AI agent.**
 
-Give an AI coding agent (Cursor, Claude Code, Codex, or any agent that reads `SKILL.md` files) a script of what to show, and it drives a real browser with Playwright, applies smart zooms and smooth cursor motion, optionally generates an ElevenLabs voiceover, syncs it to the recording, burns in captions, and hands you back an `.mp4`.
+No video editor. No manual screen recording. Tag a skill in Cursor or Claude Code, describe what to show, and get back a zoom-composited `.mp4` with optional voiceover and burned-in captions.
 
-The preview below **was produced by this repo's own `film-demo` skill**, recording the tiny fixture app in [examples/hello-demo](examples/hello-demo):
+The preview below was **recorded by this repo's own [`film-demo`](skills/film-demo) skill** — not edited by hand:
 
 <video src="https://raw.githubusercontent.com/AlexAnsart/demo-studio/main/docs/assets/hello-demo.mp4" autoplay loop muted playsinline width="100%"></video>
 
-## What's in the box
+---
 
-| Skill | Does |
-|-------|------|
-| [demo-setup](skills/demo-setup) | Run once per project — detects your dev server, asks a few questions, writes `demo.config.json`, vendors the recording engine |
-| [film-demo](skills/film-demo) | Records a silent, zoom-composited screen capture from a beat-by-beat script — the core engine |
-| [narrate](skills/narrate) | Generates a voiceover `.mp3` from a script with ElevenLabs |
-| [sync-narration](skills/sync-narration) | Aligns narration to the recording (via Whisper), inserts pauses, burns styled captions |
-| [produce-video](skills/produce-video) | Orchestrator — chains all of the above into one end-to-end pipeline |
+## Why not just screen-record?
 
-Use `film-demo` alone for a silent product demo, or `produce-video` for the full narrated pipeline.
+| Manual recording | demo-studio |
+|------------------|-------------|
+| You drive every click | Agent drives Playwright from a script |
+| Zooms added in post | Smart focus/wide camera baked in |
+| Voice + sync in a DAW | ElevenLabs + Whisper alignment automated |
+| Every take is different | Guardrails + verify loop before delivery |
 
-## Requirements
+Works on **any web app** — Vite, Next.js, your own stack. One install, five skills.
 
-- Node.js 18+
-- [ffmpeg](https://ffmpeg.org/download.html) and `ffprobe` on your `PATH`
-- Python 3.9+ (only for `narrate` and `sync-narration`)
-- An [ElevenLabs](https://elevenlabs.io) API key (only for narrated videos)
+---
 
-## Install
+## Quick start
 
-Skills are installed with the [skills CLI](https://github.com/vercel-labs/skills), which reads `SKILL.md` files straight from a GitHub repo — no npm package, no publishing step.
-
-```bash
-# All skills, into whichever agent(s) it detects in your project
-npx skills add AlexAnsart/demo-studio --all
-
-# Or pick specific ones
-npx skills add AlexAnsart/demo-studio --skill demo-setup film-demo
-
-# Target a specific agent explicitly (cursor, claude-code, codex, ...)
-npx skills add AlexAnsart/demo-studio --all --agent cursor
-```
-
-This copies the skill folders into your agent's skills directory (e.g. `.cursor/skills/`, `.claude/skills/`). Nothing runs automatically — your agent reads the `SKILL.md` files when you ask (e.g. `@produce-video` in Cursor, or "produce a demo video of…") and runs the underlying scripts (`run.mjs`, `compose.mjs`, etc.) for you. You don't type those commands unless debugging.
-
-See [skills/demo-setup/references/agent-integration.md](skills/demo-setup/references/agent-integration.md) for the full Cursor / Claude Code flow.
-
-## Setup (once per project)
-
-Open your project in the agent and ask it to run **demo-setup**. It will:
-
-1. Detect your dev server (`baseUrl`, framework) or ask if it can't.
-2. Ask whether the demo needs to log in, and whether you want narration.
-3. Write `demo.config.json` at your project root (see [docs/CONFIG.md](docs/CONFIG.md) for every field).
-4. Vendor the recording engine into `demos/_engine/`.
-5. Scaffold a first `demos/<name>/` folder with a `script.md` template.
-6. Run `check-setup.mjs` and the engine's own smoke test to confirm ffmpeg/Playwright/Node all work.
-
-```
-your-project/
-├── demo.config.json
-├── .env                 # API keys, demo login — gitignored
-└── demos/
-    ├── _engine/          # vendored film-demo scripts
-    └── create-task/      # your first demo
-```
-
-## `.env`
-
-```bash
-# Only needed if you want a voiceover
-ELEVENLABS_API_KEY=
-
-# Only needed if demo.config.json sets auth.loginRequired: true
-DEMO_USER_EMAIL=
-DEMO_USER_PASSWORD=
-```
-
-Never commit real credentials — use a dedicated demo/test account.
-
-## Usage
-
-Once set up, just ask your agent, in plain language, in Cursor, Claude Code, or any agent with skills installed:
-
-> "Use produce-video to record a demo of creating a task, with narration, and save it to `demos/create-task/output/demo.mp4`."
-
-or for a silent-only clip:
-
-> "Use film-demo to record the signup flow, no narration, save it to `out.mp4`."
-
-The agent writes a beat script (`Show:` steps, `Say:` line if narrated — see [skills/produce-video/SKILL.md](skills/produce-video/SKILL.md)), then runs the pipeline end to end: record → speed up dead time → smart zoom/pan → style frame → (voice → align → sync + captions) → automated quality checks → deliver the file.
-
-## Try it yourself
-
-**1. Install** (from any project folder — your app, or this repo to dogfood the hello fixture):
+**1. Install** (in your project, or clone this repo to try the [hello fixture](examples/hello-demo)):
 
 ```bash
 npx skills add AlexAnsart/demo-studio --all --agent cursor --copy -y
 ```
 
-**2. First time in a project** — tag the setup skill in Cursor chat:
+**2. Set up once** — in Cursor chat:
 
-> @demo-setup Set up demo-studio for this project. Use the hello fixture in `examples/hello-demo/app` if there is no dev server.
+> @demo-setup Set up demo-studio for this project.
 
-**3. Record a silent demo** — tag the recording skill with a concrete script:
+**3. Record** — silent demo:
 
-> @film-demo Record a silent demo of the hello fixture: open the task app, type "Ship the v1 release", click Add, show the new item in the list, save to `examples/hello-demo/output/demo.mp4`. Use the studio-dark preset.
+> @film-demo Record a silent demo of the signup flow. Save to `demos/signup/demo.mp4`.
 
-The agent writes the beat script, runs Playwright, composes zooms and the styled frame, verifies quality, and delivers the `.mp4`. You don't run `compose.mjs` or other pipeline commands yourself.
+Or full narrated pipeline (needs `ELEVENLABS_API_KEY` in `.env`):
 
-**Narrated version** (needs `ELEVENLABS_API_KEY` in `.env`):
+> @produce-video Produce a narrated demo of creating a task — voiceover and captions — save to `demos/create-task/demo.mp4`.
 
-> @produce-video Produce a narrated demo of the hello fixture task flow — voiceover + burned captions — save to `examples/hello-demo/output/demo.mp4`.
+The agent writes the beat script, records the browser, composes zooms, runs quality checks, and delivers the file. You don't run ffmpeg or Playwright commands yourself.
 
-<details>
-<summary>Maintainers: regenerate the README preview</summary>
+---
 
-From a clone, after recording `examples/hello-demo/renders/NNN/final.mp4`:
+## Skills
 
-```bash
-# Full-res MP4 for the README (1920×1080, 30fps)
-ffmpeg -y -i examples/hello-demo/renders/NNN/final.mp4 \
-  -c:v libx264 -crf 18 -preset slow -pix_fmt yuv420p -movflags +faststart -an \
-  docs/assets/hello-demo.mp4
+| Skill | Role |
+|-------|------|
+| [demo-setup](skills/demo-setup) | One-time project config — dev server, auth, narration, scaffolds your first demo |
+| [film-demo](skills/film-demo) | Silent capture — Playwright, cursor, zone zooms, speed-ups, styled frame |
+| [narrate](skills/narrate) | ElevenLabs voiceover from your script |
+| [sync-narration](skills/sync-narration) | Whisper alignment, pause insertion, caption burn-in |
+| [produce-video](skills/produce-video) | End-to-end orchestrator — all of the above in one run |
 
-# Optional GIF fallback (1280×720, 15fps)
-ffmpeg -y -i examples/hello-demo/renders/NNN/final.mp4 \
-  -vf "fps=15,scale=1280:-1:flags=lanczos,palettegen=stats_mode=full" -update 1 -frames:v 1 docs/assets/_palette.png
-ffmpeg -y -i examples/hello-demo/renders/NNN/final.mp4 -i docs/assets/_palette.png \
-  -lavfi "fps=15,scale=1280:-1:flags=lanczos[x];[x][1:v]paletteuse=dither=sierra2_4a" docs/assets/hello-demo.gif
+---
+
+## How it works
+
+```
+Your prompt  →  script.md (Say + Show beats)
+                    ↓
+              narrate (optional)  →  narration.mp3
+                    ↓
+              film-demo           →  silent .mp4 (smart zooms, guardrails)
+                    ↓
+              sync-narration      →  final .mp4 + captions
 ```
 
-</details>
+**Voice comes first** when narrated: the video adapts to the voice, not the other way around.
+
+---
+
+## Requirements
+
+| Tool | Needed for |
+|------|------------|
+| Node.js 18+ | Recording engine |
+| [ffmpeg](https://ffmpeg.org/download.html) + `ffprobe` | Compose, sync, captions |
+| Python 3.9+ | Narration sync (Whisper) |
+| [ElevenLabs](https://elevenlabs.io) API key | Voiceover only — silent mode works without it |
+
+Copy [`.env.example`](.env.example) → `.env` for `ELEVENLABS_API_KEY` and optional demo login credentials.
+
+---
+
+## Try the hello fixture
+
+No dev server required — use this repo directly:
+
+```bash
+npx skills add AlexAnsart/demo-studio --all --agent cursor --copy -y
+```
+
+Then in Cursor:
+
+> @demo-setup Set up demo-studio. Use the hello fixture in `examples/hello-demo/app`.
+>
+> @film-demo Record a silent demo: type "Ship the v1 release", click Add, show the new task. Save to `examples/hello-demo/output/demo.mp4`.
+
+---
 
 ## Configuration
 
-All tunables (cursor style, zoom padding, speed-up thresholds, frame preset, narration voice, captions) live in `demo.config.json`. Full reference: [docs/CONFIG.md](docs/CONFIG.md).
+All tunables — cursor style, zoom padding, speed-ups, frame preset, voice — live in `demo.config.json`. See [docs/CONFIG.md](docs/CONFIG.md).
+
+---
 
 ## License
 
-MIT
+MIT · [AlexAnsart/demo-studio](https://github.com/AlexAnsart/demo-studio)

@@ -72,17 +72,19 @@ Film progress:
 
 | Tool | Run | What it gives you |
 |------|-----|-------------------|
-| `compose.mjs <renderDir> [--out p] [--preset name] [--no-frame] [--no-speedup] [--speedup k=v,…]` | after every record | speed-ups → zoom → styled frame → **prints the camera plan (each shot: start, end, hold, zoom, label) and all guardrail alerts** |
+| `compose.mjs <renderDir> [--out p] [--preset name] [--no-frame] [--no-speedup] [--speedup k=v,…]` | after every record | **hard-fails if `capture-stats.json` fps < 25 or p90 > 80ms** → speed-ups → zoom → styled frame → **prints the camera plan and all guardrail alerts** |
 | `guardrails.mjs <renderDir>` | anytime after compose | re-prints camera plan + alerts; exit 1 if alerts. Kinds: `cursor-offscreen`, `zoom-too-long` (>12s), `inactivity` (>5s no cursor/typing/click), `zone-clipped`, `zoom-pump` (blink-short wide between two zooms / redundant re-focus), `record-alert` |
 | `inspect.mjs <renderDir> [--times 3,10.5] [--alerts]` | to SEE the video | annotated frames from the raw capture: white box = exact crop the final video shows at that instant, gray box = focus zone, filled square = cursor; plus `review/inspect.json` with crop/cursor coordinates and cursor-to-edge distances per frame |
-| `verify.mjs <renderDir>` | before delivering | duration bounds, activity-based dead-air, blank-opening check, ends-too-soon check, per-shot stills from `final.mp4` |
+| `verify.mjs <renderDir>` | before delivering | **capture gate (fps ≥ 25, p90 ≤ 80ms)**, duration bounds, activity-based dead-air, blank-opening check, ends-too-soon check, per-shot stills from `final.mp4` |
 | `test-engine.mjs` | after ANY change to `scripts/` | full pipeline e2e on a synthetic page (no app needed): capture fps/regularity, cursor across a navigation, camera, speed-ups, guardrails, verify |
 
 **Capture health:** every record writes `capture-stats.json` (frame count,
-achieved fps, frame interval p50/p90). `capturedFps` should sit near 30 with
-p90 ≤ ~80ms — a low/irregular capture is what reads as a stuttering cursor and
-choppy loading animations, and means something is starving the recorder
-(heavy machine load, giant page). Fix that before blaming the beat script.
+achieved fps, frame interval p50/p90). **`compose.mjs`, `verify.mjs`, and
+`sync-narration.mjs` hard-fail when `capturedFps` < 25 or p90 > 80ms** — do
+not compose, sync, or deliver a choppy take. Target: ~30fps with p90 ≤ ~80ms.
+Low/irregular capture reads as a stuttering cursor — wrap LLM/API beats in
+`loadingStart`/`loadingEnd` + `appear`/`done`, wait on result locators (not
+bare `waitForSpinner(180000)`), or pre-generate off-camera when possible.
 
 **How to use alerts:** every alert is deterministic and timestamped. For each
 one, either fix the cause in `run.mjs` and re-record, or explicitly justify it
@@ -209,6 +211,10 @@ console.log(renderDir, `${capturedFps}fps`)
 - **`type()` not paste/fill** for any text the viewer reads.
 - **`appear()` + `done()`** for every async tool/API call the user waits on
   (they also nudge the cursor — keep them).
+- **`loadingStart`/`loadingEnd`** bracket multi-tool sequences. For LLM/API
+  waits: `loadingStart` → click → `appear` → wait on **result locators** →
+  `done` → `loadingEnd`. Never bare `waitForSpinner(180000)` outside this
+  bracket.
 - Log in, seed data, cleanup → **off-camera** (separate context, no video).
 - **`settle(page)` before the first beat** and after any on-camera navigation.
 - **`expect:` on every click with a knowable outcome.** A click that visibly

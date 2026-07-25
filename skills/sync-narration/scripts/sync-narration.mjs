@@ -12,6 +12,7 @@ import { resolve, dirname } from 'node:path'
 import { writeFileSync, mkdtempSync } from 'node:fs'
 import { tmpdir } from 'node:os'
 import { platform } from 'node:os'
+import { assertCaptureStats } from '../../film-demo/scripts/capture-gate.mjs'
 
 const DEFAULT_SEG_PREROLL = 0.08
 const DEFAULT_SEG_POSTROLL = 0.12
@@ -196,6 +197,18 @@ function printTimeline(captions, segments, newStartOfSegment, gaps, leadGap, tra
   })
 }
 
+function resolveRenderDir(plan, planDir) {
+  if (plan.renderDir) return resolve(planDir, plan.renderDir)
+  let dir = resolve(planDir, dirname(plan.video))
+  for (let i = 0; i < 4; i++) {
+    if (existsSync(resolve(dir, 'capture-stats.json'))) return dir
+    const parent = dirname(dir)
+    if (parent === dir) break
+    dir = parent
+  }
+  return null
+}
+
 function main() {
   const validateOnly = process.argv.includes('--validate-only')
   const plan = JSON.parse(readFileSync(planPath(), 'utf8'))
@@ -208,6 +221,13 @@ function main() {
   if (!existsSync(audio)) fail(`audio not found: ${audio}`)
   if (!style.fontfile) fail('no monospace font found on this system — set style.fontfile in plan.json to an absolute .ttf/.ttc path')
   if (!existsSync(style.fontfile)) fail(`fontfile not found: ${style.fontfile}`)
+
+  const renderDir = resolveRenderDir(plan, dirname(planPath()))
+  if (renderDir) {
+    assertCaptureStats(renderDir)
+  } else {
+    console.warn('[sync-narration] WARNING: no capture-stats.json found near video — skipping capture gate (set plan.renderDir to the record folder)')
+  }
 
   const segmentPreRoll = plan.segmentPreRoll ?? DEFAULT_SEG_PREROLL
   const segmentPostRoll = plan.segmentPostRoll ?? DEFAULT_SEG_POSTROLL

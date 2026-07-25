@@ -11,6 +11,7 @@ import { existsSync, mkdirSync, readFileSync, writeFileSync, statSync } from 'fs
 import { spawnSync } from 'child_process'
 import { pathToFileURL } from 'url'
 import { inactivityGaps } from './speedup.mjs'
+import { checkCaptureStats } from './capture-gate.mjs'
 
 function ffprobeDuration(path) {
   const r = spawnSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', path], { encoding: 'utf8' })
@@ -63,6 +64,9 @@ export function verifyFilm(renderDir, options = {}) {
   const zoomPlanPath = join(renderDir, 'zoom-plan.json')
   const reviewDir = join(renderDir, 'review')
   mkdirSync(reviewDir, { recursive: true })
+
+  const capture = checkCaptureStats(renderDir)
+  for (const issue of capture.issues) issues.push(issue)
 
   const frames = []
   let dur = null
@@ -127,11 +131,12 @@ export function verifyFilm(renderDir, options = {}) {
     renderDir,
     video: existsSync(videoPath) ? videoPath : null,
     durationSec: dur,
+    captureStats: capture.stats,
     issues,
     frames: [...new Set(frames)],
     agentInstructions: pass
       ? 'Read every review/*.png. For each shot-*.png confirm the crop frames the labeled element (not empty space, not cut off). Confirm opening-*.png is not blank. Only then copy final.mp4 to the requested output path.'
-      : 'Fix run.mjs (dead air, wrong element) or zoom-plan options (padding/maxZoom), re-record with a new render number, re-compose, re-verify. Do not deliver until pass:true.',
+      : 'Fix run.mjs (dead air, wrong element, choppy capture) or zoom-plan options (padding/maxZoom), re-record with a new render number, re-compose, re-verify. Do not deliver until pass:true.',
   }
   writeFileSync(join(renderDir, 'review-report.json'), JSON.stringify(report, null, 2), 'utf8')
   return report

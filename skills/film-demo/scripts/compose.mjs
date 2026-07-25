@@ -8,6 +8,7 @@ import { FILM_VIEWPORT, rawVideoPath } from './record.mjs'
 import { postprocessRecording } from './speedup.mjs'
 import { runGuardrails, formatReport } from './guardrails.mjs'
 import { loadPreset } from './presets.mjs'
+import { assertCaptureStats } from './capture-gate.mjs'
 
 function ffprobeDuration(path) {
   const r = spawnSync('ffprobe', ['-v', 'error', '-show_entries', 'format=duration', '-of', 'csv=p=0', path], { encoding: 'utf8' })
@@ -38,6 +39,8 @@ export function composeFilm(renderDir, options = {}) {
     speedupConfig,
     ...zoomOpts
   } = options
+
+  assertCaptureStats(renderDir)
 
   const rawPath = rawVideoPath(renderDir)
   const timelinePath = join(renderDir, 'timeline.json')

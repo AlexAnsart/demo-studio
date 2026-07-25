@@ -10,7 +10,7 @@
  * Exits 1 when a check fails. Output → .test/<NNN>/
  *
  * Review by reading:
- *   .test/<NNN>/capture-stats.json   → capturedFps ≥ 20, p90 interval ≤ 80ms
+ *   .test/<NNN>/capture-stats.json   → capturedFps ≥ 25, p90 interval ≤ 80ms
  *   .test/<NNN>/review/*.png         → cursor rendering + crop framing
  *   .test/<NNN>/final.mp4            → the assembled result
  */
@@ -120,8 +120,8 @@ async function main() {
 
   const stats = JSON.parse(readFileSync(join(renderDir, 'capture-stats.json'), 'utf8'))
   console.log(`[test-engine] capture: ${stats.frameCount} frames, ${stats.capturedFps} fps, intervals p50=${stats.frameIntervalMs.p50}ms p90=${stats.frameIntervalMs.p90}ms max=${stats.frameIntervalMs.max}ms`)
-  if (stats.capturedFps < 18) fail(`captured fps too low (${stats.capturedFps}) — cursor will look choppy`)
-  if (stats.frameIntervalMs.p90 > 110) fail(`frame interval p90 ${stats.frameIntervalMs.p90}ms — capture is irregular`)
+  if (stats.capturedFps < 25) fail(`captured fps too low (${stats.capturedFps}) — cursor will look choppy`)
+  if (stats.frameIntervalMs.p90 > 80) fail(`frame interval p90 ${stats.frameIntervalMs.p90}ms — capture is irregular`)
 
   const result = composeFilm(renderDir)
   console.log(`[test-engine] composed ${result.finalPath} (${result.durationSec.toFixed(1)}s raw), ${result.shots.length} shots, ${result.guardrails.alerts.length} alerts`)

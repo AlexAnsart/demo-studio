@@ -216,7 +216,7 @@ Follow `sync-narration` end to end. Chaining shortcuts already earned:
 - [ ] `verify.mjs` passes on the silent/final master
 - [ ] No tight `focus()` zoom held through a loading state or unscripted UI
 - [ ] No narration while the cursor travels — narrated mode
-- [ ] `capture-stats.json` healthy (≈30fps, p90 ≤ 80ms) — else the take is choppy, re-record
+- [ ] `capture-stats.json` healthy — **`compose.mjs` / `verify.mjs` / sync hard-fail if fps < 25 or p90 > 80ms**; else re-record
 - [ ] Final file sits at the exact requested output path
 - [ ] Silent master + `.mp3` kept alongside — narrated mode
 

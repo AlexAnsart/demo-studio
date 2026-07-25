@@ -1,0 +1,17 @@
+node_modules/
+.env
+.env.local
+*.pyc
+__pycache__/
+.venv/
+
+# Generated renders and working files — never commit output
+**/renders/
+**/.test/
+examples/**/output/
+*.tmp.mp4
+/tmp/
+
+# OS
+.DS_Store
+Thumbs.db

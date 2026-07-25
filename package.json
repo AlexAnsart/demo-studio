@@ -1,0 +1,15 @@
+{
+  "name": "demo-studio",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Agent skills that turn any web app into a polished, narrated demo video — Playwright capture, smart zooms, ElevenLabs voiceover, Whisper sync and burned captions.",
+  "type": "module",
+  "license": "MIT",
+  "scripts": {
+    "test:engine": "node skills/film-demo/scripts/test-engine.mjs",
+    "example:hello": "node examples/hello-demo/run.mjs"
+  },
+  "devDependencies": {
+    "playwright": "^1.48.0"
+  }
+}

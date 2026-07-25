@@ -1,0 +1,9 @@
+{
+  "name": "film-demo-engine",
+  "private": true,
+  "type": "module",
+  "description": "Recording engine used by the film-demo skill. Not published — vendored into your project by the demo-setup skill, or run in place from this folder.",
+  "dependencies": {
+    "playwright": "^1.48.0"
+  }
+}

@@ -4,9 +4,9 @@ Agent skills that turn a running web app into a polished, narrated demo video �
 
 Give an AI coding agent (Cursor, Claude Code, Codex, or any agent that reads `SKILL.md` files) a script of what to show, and it drives a real browser with Playwright, applies smart zooms and smooth cursor motion, optionally generates an ElevenLabs voiceover, syncs it to the recording, burns in captions, and hands you back an `.mp4`.
 
-The GIF below **was produced by this repo's own `film-demo` skill**, recording the tiny fixture app in [examples/hello-demo](examples/hello-demo):
+The preview below **was produced by this repo's own `film-demo` skill**, recording the tiny fixture app in [examples/hello-demo](examples/hello-demo):
 
-![demo-studio recording its own example app](docs/assets/hello-demo.gif)
+<video src="https://raw.githubusercontent.com/AlexAnsart/demo-studio/main/docs/assets/hello-demo.mp4" autoplay loop muted playsinline width="100%"></video>
 
 ## What's in the box
 
@@ -114,15 +114,21 @@ The agent writes the beat script, runs Playwright, composes zooms and the styled
 > @produce-video Produce a narrated demo of the hello fixture task flow — voiceover + burned captions — save to `examples/hello-demo/output/demo.mp4`.
 
 <details>
-<summary>Maintainers: reproduce the README GIF without an agent</summary>
+<summary>Maintainers: regenerate the README preview</summary>
 
-From a clone of this repo (CI / debugging only):
+From a clone, after recording `examples/hello-demo/renders/NNN/final.mp4`:
 
 ```bash
-npm install
-npx playwright install chromium
-node examples/hello-demo/run.mjs
-node skills/film-demo/scripts/compose.mjs examples/hello-demo/renders/001 --preset studio-dark
+# Full-res MP4 for the README (1920×1080, 30fps)
+ffmpeg -y -i examples/hello-demo/renders/NNN/final.mp4 \
+  -c:v libx264 -crf 18 -preset slow -pix_fmt yuv420p -movflags +faststart -an \
+  docs/assets/hello-demo.mp4
+
+# Optional GIF fallback (1280×720, 15fps)
+ffmpeg -y -i examples/hello-demo/renders/NNN/final.mp4 \
+  -vf "fps=15,scale=1280:-1:flags=lanczos,palettegen=stats_mode=full" -update 1 -frames:v 1 docs/assets/_palette.png
+ffmpeg -y -i examples/hello-demo/renders/NNN/final.mp4 -i docs/assets/_palette.png \
+  -lavfi "fps=15,scale=1280:-1:flags=lanczos[x];[x][1:v]paletteuse=dither=sierra2_4a" docs/assets/hello-demo.gif
 ```
 
 </details>

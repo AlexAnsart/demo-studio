@@ -27,13 +27,61 @@ Works on **any web app** — Vite, Next.js, your own stack. One install, five sk
 
 ---
 
+## Requirements
+
+**`npx skills add` only copies the skill files** — it does not install ffmpeg,
+Playwright, Python packages, or browser binaries. **`@demo-setup`** writes
+`demo.config.json`, vendors the recording engine, and runs sanity checks — it
+does **not** install system tools for you. Install the rows below once per
+machine (or per project for Playwright / npm deps).
+
+### Every demo (silent or narrated)
+
+| Tool | How to install | Used for |
+|------|----------------|----------|
+| **Node.js 18+** | [nodejs.org](https://nodejs.org/) | Recording scripts |
+| **ffmpeg + ffprobe** on `PATH` | [ffmpeg.org/download](https://ffmpeg.org/download.html) — on macOS: `brew install ffmpeg`; on Windows: [gyan.dev builds](https://www.gyan.dev/ffmpeg/builds/) and add `bin` to `PATH` | Compose, speed-ups, sync, captions |
+| **Playwright + Chromium** | In your project root: `npm i playwright` then `npx playwright install chromium` | Browser capture (`film-demo`) |
+
+Cloning **this repo** for the hello fixture: `npm install` (Playwright is already in `package.json`), then `npx playwright install chromium`.
+
+### Narrated demos only (`narrate` / `sync-narration` / `produce-video`)
+
+| Tool | How to install | Used for |
+|------|----------------|----------|
+| **Python 3.9+** on `PATH` | [python.org](https://www.python.org/downloads/) | Whisper alignment, ElevenLabs script |
+| **elevenlabs** (Python) | `pip install -r skills/narrate/scripts/requirements.txt` | Text → `narration.mp3` |
+| **faster-whisper** (Python) | `pip install -r skills/sync-narration/scripts/requirements.txt` | Sentence timing (local, no API key) |
+| **`ELEVENLABS_API_KEY`** | Copy [`.env.example`](.env.example) → `.env` | ElevenLabs TTS only |
+
+Silent mode (`narration.provider: "none"`) needs **no** Python packages and **no** API key.
+
+### Recording your own app (not the hello fixture)
+
+Your dev server must be reachable at `demo.config.json` → `app.baseUrl` (e.g. `npm run dev` on port 5173). `@demo-setup` infers the command but does not start the server for you.
+
+### Verify before the first recording
+
+After `@demo-setup` (or once `demo.config.json` exists):
+
+```bash
+node skills/demo-setup/scripts/check-setup.mjs    # node, ffmpeg, ffprobe, python, config
+node skills/film-demo/scripts/test-engine.mjs     # full capture → compose smoke test (no app)
+```
+
+Both must exit `0`. If ffmpeg or ffprobe is missing, nothing downstream works.
+
+---
+
 ## Quick start
 
-**1. Install** (in your project, or clone this repo to try the [hello fixture](examples/hello-demo)):
+**1. Install skills** (in your project, or clone this repo to try the [hello fixture](examples/hello-demo)):
 
 ```bash
 npx skills add AlexAnsart/demo-studio --all --agent cursor --copy -y
 ```
+
+Install the [requirements](#requirements) above if you have not already (ffmpeg, Playwright, and Python deps for narrated runs).
 
 **2. Set up once** — in Cursor chat:
 
@@ -81,22 +129,16 @@ Your prompt  →  script.md (Say + Show beats)
 
 ---
 
-## Requirements
-
-| Tool | Needed for |
-|------|------------|
-| Node.js 18+ | Recording engine |
-| [ffmpeg](https://ffmpeg.org/download.html) + `ffprobe` | Compose, sync, captions |
-| Python 3.9+ | Narration sync (Whisper) |
-| [ElevenLabs](https://elevenlabs.io) API key | Voiceover only — silent mode works without it |
-
-Copy [`.env.example`](.env.example) → `.env` for `ELEVENLABS_API_KEY` and optional demo login credentials.
-
----
-
 ## Try the hello fixture
 
-No dev server required — use this repo directly:
+No dev server required — clone or open this repo, then install deps once:
+
+```bash
+npm install
+npx playwright install chromium
+```
+
+Or install skills into another project:
 
 ```bash
 npx skills add AlexAnsart/demo-studio --all --agent cursor --copy -y

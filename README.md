@@ -8,6 +8,9 @@ The launch clip below was **produced by this repo's own [`produce-video`](skills
 
 [![Launch demo — install demo-studio, tag @produce-video, get a polished clip](docs/assets/promo-poster.png)](https://youtu.be/pDusHjg97Ng)
 
+<video src="https://github.com/user-attachments/assets/c2baa6a0-7a12-4506-947f-77d15745fba7" controls width="900"></video>
+
+
 The preview it delivers inside that session was recorded the same way with [`film-demo`](skills/film-demo/SKILL.md):
 
 ![hello-demo — task app recorded by film-demo](docs/assets/hello-demo.gif)

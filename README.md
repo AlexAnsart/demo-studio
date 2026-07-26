@@ -180,7 +180,7 @@ Built-in macOS presets ship with these defaults (`skills/film-demo/scripts/prese
 
 | Preset | Default wallpaper | Dim overlay |
 |--------|-------------------|-------------|
-| `macos-dark` | `wave-purple-pink` (abstract gradient) | 0.20 |
+| `macos-dark` | `photo-coast-aerial` (aerial beach) | 0.25 |
 | `macos-light` | `wave-blue-minimal` (soft blue) | 0.08 |
 
 Swap the wallpaper to any bundled name or your own image — the preset only sets the starting point.
@@ -273,6 +273,7 @@ Finer options (dim, blur, title bar color) are **not** in `demo.config.json` yet
 
 | Use case | Suggested names |
 |----------|-----------------|
+| **Default (compose)** | `photo-coast-aerial` |
 | Tropical beach, aerial | `photo-beach-tropical`, `photo-beach-drone`, `photo-island-turquoise` |
 | Clean abstract (dark UI) | `wave-purple-pink`, `ribbon-indigo`, `ribbon-violet` |
 | Clean abstract (light UI) | `wave-blue-minimal`, `ribbon-ocean` |

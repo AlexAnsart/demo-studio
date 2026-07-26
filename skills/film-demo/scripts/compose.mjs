@@ -23,7 +23,7 @@ function ffprobeDuration(path) {
  * verify.mjs and for the agent to sanity-check before/after rendering.
  */
 export async function composeFilm(renderDir, options = {}) {
-  const preset = loadPreset(options.preset ?? 'studio-dark')
+  const preset = loadPreset(options.preset ?? 'macos-dark')
   const {
     out,
     canvasW = 1920,
@@ -107,7 +107,7 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
   const noFrame = args.includes('--no-frame')
   const skipSpeedup = args.includes('--no-speedup')
   const presetIdx = args.indexOf('--preset')
-  const preset = presetIdx >= 0 ? args[presetIdx + 1] : undefined
+  const preset = presetIdx >= 0 ? args[presetIdx + 1] : 'macos-dark'
   // --speedup key=value[,key=value…] e.g. --speedup idleGapMin=9999,toolWaitMax=6
   // (narrated videos disable idle compression to protect narration holds)
   const speedupIdx = args.indexOf('--speedup')

@@ -42,7 +42,7 @@ root to start from a template.
 | `clean-light` | Off-white background, faint shadow, square corners |
 | `none` | No background/shadow — border only |
 | `rounded-dark` | `studio-dark` with rounded corners, no wallpaper/title bar |
-| `macos-dark` | Wallpaper (`wave-purple-pink`) + rounded corners + dark title bar + traffic-light dots |
+| `macos-dark` | Wallpaper (`photo-coast-aerial`) + rounded corners + dark title bar + traffic-light dots |
 | `macos-light` | Wallpaper (`wave-blue-minimal`) + rounded corners + light title bar + traffic-light dots |
 
 See `skills/film-demo/scripts/presets.mjs` for the exact values, or add your own preset there

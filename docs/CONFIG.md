@@ -21,8 +21,12 @@ root to start from a template.
 | `speedup.toolWaitMax` | `4` | Seconds a tool/API spinner is compressed to |
 | `speedup.preToolWaitMax` | `2.5` | Seconds of pre-tool latency kept |
 | `speedup.idleGapMax` / `idleGapMin` | `1.8` / `3.5` | Any inactive gap longer than `idleGapMin` is compressed to `idleGapMax`. Set `idleGapMin` very high (e.g. `9999`) for narrated videos to protect narration-driven holds |
-| `frame.preset` | `studio-dark` | One of `studio-dark`, `clean-light`, `none` (`skills/film-demo/scripts/presets.mjs`) |
+| `frame.preset` | `studio-dark` | One of `studio-dark`, `clean-light`, `none`, `rounded-dark`, `macos-dark`, `macos-light` (`skills/film-demo/scripts/presets.mjs`) — see **Presets** and **Window chrome** below |
 | `frame.canvasWidth` / `canvasHeight` | `1920` / `1080` | Final output resolution |
+| `frame.wallpaper` | `null` | Bundled name (`wave-purple-pink`, `wave-blue-minimal`, `ribbon-violet`, … — see list below) or path to your own image |
+| `frame.radius` | `0` | Overrides the preset's window corner radius in px (`0` = square) |
+| `frame.titlebarHeight` | `0` | Overrides the preset's macOS-style title bar height in px (`0` = no title bar) |
+| `frame.trafficLights` | `true` | Set to `false` to hide the title bar dots |
 | `narration.provider` | `none` | `none` (silent pipeline, no API key) or `elevenlabs` |
 | `narration.voiceName` / `modelId` / `stability` | `Rachel` / `eleven_v3` / `1.0` | Passed to `narrate`'s `generate_narration.py` |
 | `narration.apiKeyEnv` | `ELEVENLABS_API_KEY` | Name of the env var holding the key |
@@ -32,6 +36,51 @@ root to start from a template.
 
 ## Presets
 
-`studio-dark` (default), `clean-light`, `none` — see
-`skills/film-demo/scripts/presets.mjs` for the exact values, or add your own
-preset there directly.
+| Preset | Look |
+|--------|------|
+| `studio-dark` (default) | Near-black background, subtle shadow, square corners |
+| `clean-light` | Off-white background, faint shadow, square corners |
+| `none` | No background/shadow — border only |
+| `rounded-dark` | `studio-dark` with rounded corners, no wallpaper/title bar |
+| `macos-dark` | Wallpaper (`wave-purple-pink`) + rounded corners + dark title bar + traffic-light dots |
+| `macos-light` | Wallpaper (`wave-blue-minimal`) + rounded corners + light title bar + traffic-light dots |
+
+See `skills/film-demo/scripts/presets.mjs` for the exact values, or add your own preset there
+directly (it's plain data — copy one of the existing entries).
+
+## Window chrome (wallpaper, rounded corners, title bar)
+
+Every preset above is built from the same knobs — `frame.wallpaper`/`radius`/`titlebarHeight` in
+`demo.config.json` override just that one aspect of whichever preset you picked. For finer control
+(dim/blur amount, title bar color, dot colors) call `composeFilm()` directly or pass extra flags to
+`compose.mjs`:
+
+```bash
+node skills/film-demo/scripts/compose.mjs <renderDir> --preset macos-dark
+# or start from a plain preset and add chrome piecemeal:
+node skills/film-demo/scripts/compose.mjs <renderDir> --preset studio-dark \
+  --wallpaper forest-night --wallpaper-dim 0.5 --radius 28
+# titlebar + custom dot colors, no wallpaper:
+node skills/film-demo/scripts/compose.mjs <renderDir> --preset studio-dark \
+  --radius 18 --titlebar --titlebar-color "rgba(30,30,36,0.95)" \
+  --traffic-light-colors "#ff5f57,#febc2e,#28c840"
+```
+
+| Flag | Default | Notes |
+|------|---------|-------|
+| `--wallpaper <name\|path>` | preset's | Bundled name or your own image path |
+| `--wallpaper-dim <0-1>` | `0.35` | Dark overlay opacity over the wallpaper |
+| `--wallpaper-blur <px>` | `0` | Extra blur on the wallpaper |
+| `--radius <px>` | preset's | Window corner radius (`0` = square) |
+| `--titlebar` / `--no-titlebar` | preset's | Shorthand for a 40px title bar on/off |
+| `--titlebar-height <px>` | preset's | Exact title bar height (implies a title bar if > 0) |
+| `--titlebar-color <css>` | preset's | e.g. `"rgba(22,22,27,0.94)"` |
+| `--traffic-lights` / `--no-traffic-lights` | preset's | Show/hide the dots |
+| `--traffic-light-colors <hex,hex,hex>` | `#ff5f57,#febc2e,#28c840` | Left to right |
+
+**Bundled wallpapers** (`skills/film-demo/assets/wallpapers/`): **~45 PNGs** — Unsplash photos (`photo-*`: beaches, cities, forests, deserts, aurora…) + abstract waves (`wave-*`) + synthetic ribbons/mesh (`ribbon-*`, legacy mesh). Full list in `assets/wallpapers/ATTRIBUTION.md` and `manifest.json`. Re-download: `node skills/film-demo/scripts/download-wallpapers.mjs`. Preview all: `node skills/film-demo/scripts/render-wallpaper-samples.mjs <renderDir> --sec 10`. **Bring your own**: pass any image path to `--wallpaper`/`frame.wallpaper`.
+
+**How it renders:** the title bar sits inside the existing top padding (`padY`) — it doesn't shrink
+the recorded content, so raising `titlebarHeight` above `padY` just gets clamped (with a console
+warning) rather than distorting the frame. See `reference.md` § Styled frame for the full ffmpeg/
+sharp pipeline.

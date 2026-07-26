@@ -123,7 +123,7 @@ async function main() {
   if (stats.capturedFps < 25) fail(`captured fps too low (${stats.capturedFps}) — cursor will look choppy`)
   if (stats.frameIntervalMs.p90 > 80) fail(`frame interval p90 ${stats.frameIntervalMs.p90}ms — capture is irregular`)
 
-  const result = composeFilm(renderDir)
+  const result = await composeFilm(renderDir)
   console.log(`[test-engine] composed ${result.finalPath} (${result.durationSec.toFixed(1)}s raw), ${result.shots.length} shots, ${result.guardrails.alerts.length} alerts`)
   for (const a of result.guardrails.alerts) {
     if (a.kind === 'cursor-offscreen') fail(`guardrail: ${a.message}`)

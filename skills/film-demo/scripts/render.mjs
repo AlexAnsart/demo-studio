@@ -1,5 +1,8 @@
 import { spawnSync } from 'child_process'
+import { dirname } from 'path'
+import { existsSync } from 'fs'
 import { toZoompanFilter, isTrivialPlan } from './zoompan-expr.mjs'
+import { buildChromeAssets, buildWallpaperBg, buildRoundedShadow } from './chrome.mjs'
 
 function runFfmpeg(args, label) {
   const r = spawnSync('ffmpeg', args, { encoding: 'utf8', maxBuffer: 1024 * 1024 * 64, timeout: 20 * 60 * 1000 })
@@ -23,13 +26,21 @@ export function renderZoomed(rawPath, shots, outPath, { sourceW, sourceH, outW, 
 }
 
 /**
- * Stage 2 — pads the zoomed clip into a styled canvas: background, soft drop
- * shadow, thin border. See `presets/*.json` at the repo root for ready-made
- * looks (studio-dark, clean-light, none) — pass their fields straight through
- * as `background` / `borderColor` / `shadowOpacity`. Set `shadowOpacity: 0` to
- * disable the shadow if it renders oddly on your ffmpeg build.
+ * Stage 2 — pads the zoomed clip into a styled canvas. Two paths:
+ *
+ * - **Plain** (no `wallpaper`/`radius`/`titlebarHeight`): solid background,
+ *   soft drop shadow, square 1px border — the original, unchanged ffmpeg-only
+ *   graph. Every existing preset (`studio-dark`, `clean-light`, `none`) stays
+ *   byte-identical.
+ * - **Chrome** (any of those three set): adds a wallpaper background (cover
+ *   crop + optional blur/dim), rounded window corners, and an optional
+ *   macOS-style title bar with traffic-light dots. The extra PNG assets are
+ *   pre-rendered once with `sharp` (`chrome.mjs`) then composited by ffmpeg —
+ *   see `docs/CONFIG.md` for the full `frame.*` option list.
+ *
+ * `background`/`borderColor`/`shadowOpacity` are shared by both paths.
  */
-export function applyStyledFrame(zoomedPath, outPath, options = {}) {
+export async function applyStyledFrame(zoomedPath, outPath, options = {}) {
   const {
     canvasW = 1920,
     canvasH = 1080,
@@ -42,6 +53,14 @@ export function applyStyledFrame(zoomedPath, outPath, options = {}) {
     shadowDrop = 14,
     fps = 30,
     durationSec, // required — bounds the lavfi background/shadow sources, see reference.md perf note
+    wallpaper = null,
+    wallpaperDim = 0.35,
+    wallpaperBlur = 0,
+    radius = 0,
+    titlebarHeight = 0,
+    titlebarColor = 'rgba(22,22,27,0.94)',
+    trafficLights = true,
+    trafficLightColors = ['#ff5f57', '#febc2e', '#28c840'],
   } = options
   if (!durationSec) throw new Error('applyStyledFrame requires durationSec (ffprobe the zoomed clip first)')
   const srcDur = Math.ceil(durationSec) + 1
@@ -52,26 +71,117 @@ export function applyStyledFrame(zoomedPath, outPath, options = {}) {
   const shadowX = padX - shadowPad
   const shadowY = padY - shadowPad + shadowDrop
 
-  const chains = [`color=c=${background}:s=${canvasW}x${canvasH}:r=${fps}:d=${srcDur}[bg]`]
-  if (shadowOpacity > 0) {
+  const useChrome = !!wallpaper || radius > 0 || titlebarHeight > 0
+  if (!useChrome) {
+    const chains = [`color=c=${background}:s=${canvasW}x${canvasH}:r=${fps}:d=${srcDur}[bg]`]
+    if (shadowOpacity > 0) {
+      chains.push(
+        `color=c=black:s=${shadowW}x${shadowH}:r=${fps}:d=${srcDur},format=yuva420p,colorchannelmixer=aa=${shadowOpacity},boxblur=24:1[shadow]`,
+        `[bg][shadow]overlay=x=${shadowX}:y=${shadowY}[bg2]`,
+      )
+    }
+    const bgLabel = shadowOpacity > 0 ? '[bg2]' : '[bg]'
     chains.push(
-      `color=c=black:s=${shadowW}x${shadowH}:r=${fps}:d=${srcDur},format=yuva420p,colorchannelmixer=aa=${shadowOpacity},boxblur=24:1[shadow]`,
-      `[bg][shadow]overlay=x=${shadowX}:y=${shadowY}[bg2]`,
+      `[0:v]scale=${contentW}:${contentH}:flags=lanczos[content]`,
+      // shortest=1: the generated background outlives the clip by design (srcDur is
+      // rounded up) — end the graph with the content, or the final video gains a
+      // frozen 1-2s tail. Output `-shortest` does NOT cover filter_complex graphs.
+      `${bgLabel}[content]overlay=x=${padX}:y=${padY}:shortest=1[bg3]`,
+      `[bg3]drawbox=x=${padX}:y=${padY}:w=${contentW}:h=${contentH}:color=${borderColor}:t=1[out]`,
     )
+    runFfmpeg(
+      [
+        '-y', '-i', zoomedPath,
+        '-filter_complex', chains.join(';'),
+        '-map', '[out]',
+        '-r', String(fps),
+        '-c:v', 'libx264', '-preset', 'medium', '-crf', '18', '-pix_fmt', 'yuv420p',
+        '-shortest',
+        outPath,
+      ],
+      'applyStyledFrame',
+    )
+    return outPath
   }
-  const bgLabel = shadowOpacity > 0 ? '[bg2]' : '[bg]'
+
+  // --- Chrome path ---
+  const renderDir = dirname(zoomedPath)
+  const effTitlebarHeight = titlebarHeight > 0 ? Math.min(titlebarHeight, padY) : 0
+  if (titlebarHeight > 0 && effTitlebarHeight < titlebarHeight) {
+    console.warn(`[render] titlebarHeight (${titlebarHeight}) > padY (${padY}) — clamped to ${effTitlebarHeight}. Increase frame.padY to show the full title bar.`)
+  }
+  const windowY = padY - effTitlebarHeight
+
+  const { maskPath, chromePath, windowW, windowH } = await buildChromeAssets(renderDir, {
+    contentW,
+    contentH,
+    radius,
+    titlebarHeight: effTitlebarHeight,
+    titlebarColor,
+    trafficLights,
+    trafficLightColors,
+    borderColor,
+    borderWidth: 1,
+  })
+
+  let shadowAsset = null
+  if (shadowOpacity > 0) {
+    shadowAsset = await buildRoundedShadow(renderDir, {
+      windowW,
+      windowH,
+      radius,
+      shadowOpacity,
+      shadowPad,
+      shadowDrop,
+    })
+  }
+
+  let bgPath = null
+  if (wallpaper) {
+    if (!existsSync(wallpaper)) throw new Error(`applyStyledFrame: wallpaper file not found: ${wallpaper}`)
+    bgPath = await buildWallpaperBg(renderDir, { wallpaperFile: wallpaper, canvasW, canvasH, dim: wallpaperDim, blurPx: wallpaperBlur })
+  }
+
+  const inputs = ['-y', '-i', zoomedPath, '-loop', '1', '-t', String(srcDur), '-i', maskPath, '-loop', '1', '-t', String(srcDur), '-i', chromePath]
+  let nextInputIdx = 3
+  if (bgPath) {
+    inputs.push('-loop', '1', '-t', String(srcDur), '-i', bgPath)
+    nextInputIdx++
+  }
+  const bgInputIdx = bgPath ? 3 : null
+  let shadowInputIdx = null
+  if (shadowAsset) {
+    inputs.push('-loop', '1', '-t', String(srcDur), '-i', shadowAsset.shadowPath)
+    shadowInputIdx = nextInputIdx
+    nextInputIdx++
+  }
+
+  const chains = []
+  if (bgPath) {
+    chains.push(`[${bgInputIdx}:v]scale=${canvasW}:${canvasH}:flags=lanczos[bg]`)
+  } else {
+    chains.push(`color=c=${background}:s=${canvasW}x${canvasH}:r=${fps}:d=${srcDur}[bg]`)
+  }
+  let stage = '[bg]'
+  if (shadowAsset) {
+    const sx = padX - shadowAsset.shadowPad
+    const sy = windowY - shadowAsset.shadowPad
+    chains.push(`${stage}[${shadowInputIdx}:v]overlay=x=${sx}:y=${sy}[bgshadow]`)
+    stage = '[bgshadow]'
+  }
+  const bgLabel = stage
   chains.push(
-    `[0:v]scale=${contentW}:${contentH}:flags=lanczos[content]`,
-    // shortest=1: the generated background outlives the clip by design (srcDur is
-    // rounded up) — end the graph with the content, or the final video gains a
-    // frozen 1-2s tail. Output `-shortest` does NOT cover filter_complex graphs.
-    `${bgLabel}[content]overlay=x=${padX}:y=${padY}:shortest=1[bg3]`,
-    `[bg3]drawbox=x=${padX}:y=${padY}:w=${contentW}:h=${contentH}:color=${borderColor}:t=1[out]`,
+    `[0:v]scale=${contentW}:${contentH}:flags=lanczos[contentv]`,
+    `[1:v]format=gray[maskgray]`,
+    `[contentv][maskgray]alphamerge,format=yuva420p[contentrgba]`,
+    `${bgLabel}[contentrgba]overlay=x=${padX}:y=${padY}:shortest=1[bgcontent]`,
+    `[2:v]format=rgba[chromergba]`,
+    `[bgcontent][chromergba]overlay=x=${padX}:y=${windowY}[out]`,
   )
 
   runFfmpeg(
     [
-      '-y', '-i', zoomedPath,
+      ...inputs,
       '-filter_complex', chains.join(';'),
       '-map', '[out]',
       '-r', String(fps),
@@ -79,7 +189,7 @@ export function applyStyledFrame(zoomedPath, outPath, options = {}) {
       '-shortest',
       outPath,
     ],
-    'applyStyledFrame',
+    'applyStyledFrame(chrome)',
   )
   return outPath
 }

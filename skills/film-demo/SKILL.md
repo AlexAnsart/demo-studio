@@ -72,7 +72,7 @@ Film progress:
 
 | Tool | Run | What it gives you |
 |------|-----|-------------------|
-| `compose.mjs <renderDir> [--out p] [--preset name] [--no-frame] [--no-speedup] [--speedup k=v,…]` | after every record | **hard-fails if `capture-stats.json` fps < 25 or p90 > 80ms** → speed-ups → zoom → styled frame → **prints the camera plan and all guardrail alerts** |
+| `compose.mjs <renderDir> [--out p] [--preset name] [--wallpaper name\|path] [--radius px] [--titlebar\|--no-titlebar] [--no-frame] [--no-speedup] [--speedup k=v,…]` | after every record | **hard-fails if `capture-stats.json` fps < 25 or p90 > 80ms** → speed-ups → zoom → styled frame → **prints the camera plan and all guardrail alerts**. Presets: `studio-dark`, `clean-light`, `none`, `rounded-dark`, `macos-dark`, `macos-light` (wallpaper + rounded corners + title bar — see docs/CONFIG.md) |
 | `guardrails.mjs <renderDir>` | anytime after compose | re-prints camera plan + alerts; exit 1 if alerts. Kinds: `cursor-offscreen`, `zoom-too-long` (>12s), `inactivity` (>5s no cursor/typing/click), `zone-clipped`, `zoom-pump` (blink-short wide between two zooms / redundant re-focus), `record-alert` |
 | `inspect.mjs <renderDir> [--times 3,10.5] [--alerts]` | to SEE the video | annotated frames from the raw capture: white box = exact crop the final video shows at that instant, gray box = focus zone, filled square = cursor; plus `review/inspect.json` with crop/cursor coordinates and cursor-to-edge distances per frame |
 | `verify.mjs <renderDir>` | before delivering | **capture gate (fps ≥ 25, p90 ≤ 80ms)**, duration bounds, activity-based dead-air, blank-opening check, ends-too-soon check, per-shot stills from `final.mp4` |

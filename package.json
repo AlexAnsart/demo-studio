@@ -10,6 +10,7 @@
     "example:hello": "node examples/hello-demo/run.mjs"
   },
   "devDependencies": {
-    "playwright": "^1.48.0"
+    "playwright": "^1.48.0",
+    "sharp": "^0.35.3"
   }
 }

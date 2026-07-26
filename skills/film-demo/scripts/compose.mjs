@@ -7,7 +7,7 @@ import { renderZoomed, applyStyledFrame } from './render.mjs'
 import { FILM_VIEWPORT, rawVideoPath } from './record.mjs'
 import { postprocessRecording } from './speedup.mjs'
 import { runGuardrails, formatReport } from './guardrails.mjs'
-import { loadPreset } from './presets.mjs'
+import { loadPreset, resolveWallpaper } from './presets.mjs'
 import { assertCaptureStats } from './capture-gate.mjs'
 
 function ffprobeDuration(path) {
@@ -22,7 +22,7 @@ function ffprobeDuration(path) {
  * and copies it to `out` if given. Writes `zoom-plan.json` alongside for
  * verify.mjs and for the agent to sanity-check before/after rendering.
  */
-export function composeFilm(renderDir, options = {}) {
+export async function composeFilm(renderDir, options = {}) {
   const preset = loadPreset(options.preset ?? 'studio-dark')
   const {
     out,
@@ -35,6 +35,14 @@ export function composeFilm(renderDir, options = {}) {
     background = preset.background,
     borderColor = preset.borderColor,
     shadowOpacity = preset.shadowOpacity,
+    wallpaper = preset.wallpaper ?? null,
+    wallpaperDim = preset.wallpaperDim ?? 0.35,
+    wallpaperBlur = preset.wallpaperBlur ?? 0,
+    radius = preset.radius ?? 0,
+    titlebarHeight = preset.titlebarHeight ?? 0,
+    titlebarColor = preset.titlebarColor,
+    trafficLights = preset.trafficLights ?? true,
+    trafficLightColors = preset.trafficLightColors,
     skipSpeedup = false,
     speedupConfig,
     ...zoomOpts
@@ -66,7 +74,12 @@ export function composeFilm(renderDir, options = {}) {
 
   const finalPath = join(renderDir, 'final.mp4')
   if (styledFrame) {
-    applyStyledFrame(zoomedPath, finalPath, { canvasW, canvasH, padX, padY, fps, background, borderColor, shadowOpacity, durationSec: duration })
+    await applyStyledFrame(zoomedPath, finalPath, {
+      canvasW, canvasH, padX, padY, fps, background, borderColor, shadowOpacity,
+      wallpaper: resolveWallpaper(wallpaper), wallpaperDim, wallpaperBlur,
+      radius, titlebarHeight, titlebarColor, trafficLights, trafficLightColors,
+      durationSec: duration,
+    })
   } else {
     copyFileSync(zoomedPath, finalPath)
   }
@@ -107,10 +120,42 @@ if (process.argv[1] && import.meta.url === pathToFileURL(process.argv[1]).href) 
       }),
     )
   }
+  // Chrome overrides — usually set via --preset (macos-dark/macos-light/rounded-dark)
+  // instead, but exposed individually for one-off tweaks. See docs/CONFIG.md.
+  const opt = (flag) => {
+    const i = args.indexOf(flag)
+    return i >= 0 ? args[i + 1] : undefined
+  }
+  const wallpaper = opt('--wallpaper')
+  const radiusArg = opt('--radius')
+  const radius = radiusArg !== undefined ? Number(radiusArg) : undefined
+  const titlebar = args.includes('--titlebar') ? true : args.includes('--no-titlebar') ? false : undefined
+  const titlebarHeightArg = opt('--titlebar-height')
+  const titlebarColor = opt('--titlebar-color')
+  const trafficLights = args.includes('--traffic-lights') ? true : args.includes('--no-traffic-lights') ? false : undefined
+  const trafficLightColorsArg = opt('--traffic-light-colors') // e.g. "#ff5f57,#febc2e,#28c840"
+  const wallpaperDimArg = opt('--wallpaper-dim')
+  const wallpaperBlurArg = opt('--wallpaper-blur')
+
   if (!renderDir) {
-    console.error('Usage: node compose.mjs <renderDir> [--out <path>] [--preset name] [--no-frame] [--no-speedup] [--speedup k=v,…]')
+    console.error(
+      'Usage: node compose.mjs <renderDir> [--out <path>] [--preset name] [--no-frame] [--no-speedup] [--speedup k=v,…]\n' +
+        '                        [--wallpaper name|path] [--wallpaper-dim 0-1] [--wallpaper-blur px]\n' +
+        '                        [--radius px] [--titlebar|--no-titlebar] [--titlebar-height px] [--titlebar-color css]\n' +
+        '                        [--traffic-lights|--no-traffic-lights] [--traffic-light-colors "#hex,#hex,#hex"]',
+    )
     process.exit(1)
   }
-  const result = composeFilm(renderDir, { out, preset, styledFrame: !noFrame, skipSpeedup, speedupConfig })
+  const result = await composeFilm(renderDir, {
+    out, preset, styledFrame: !noFrame, skipSpeedup, speedupConfig,
+    ...(wallpaper !== undefined ? { wallpaper } : {}),
+    ...(radius !== undefined ? { radius } : {}),
+    ...(titlebarHeightArg !== undefined ? { titlebarHeight: Number(titlebarHeightArg) } : titlebar === true ? { titlebarHeight: 40 } : titlebar === false ? { titlebarHeight: 0 } : {}),
+    ...(titlebarColor !== undefined ? { titlebarColor } : {}),
+    ...(trafficLights !== undefined ? { trafficLights } : {}),
+    ...(trafficLightColorsArg !== undefined ? { trafficLightColors: trafficLightColorsArg.split(',') } : {}),
+    ...(wallpaperDimArg !== undefined ? { wallpaperDim: Number(wallpaperDimArg) } : {}),
+    ...(wallpaperBlurArg !== undefined ? { wallpaperBlur: Number(wallpaperBlurArg) } : {}),
+  })
   console.log(JSON.stringify({ final: result.finalPath, out: result.outPath, shots: result.shots.length, durationSec: result.durationSec, alerts: result.guardrails.alerts.length }, null, 2))
 }

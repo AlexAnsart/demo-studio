@@ -13,7 +13,20 @@ export const DEFAULT_CONFIG = {
   cursor: { scale: 1.6, color: '#0A0A0A' },
   camera: { padding: 0.22, maxZoom: 1.7, transitionSec: 0.72 },
   speedup: { toolWaitMax: 4, preToolWaitMax: 2.5, idleGapMax: 1.8, idleGapMin: 3.5 },
-  frame: { preset: 'studio-dark', canvasWidth: 1920, canvasHeight: 1080 },
+  frame: {
+    preset: 'studio-dark',
+    canvasWidth: 1920,
+    canvasHeight: 1080,
+    // Window chrome overrides — usually left alone in favor of a preset that already
+    // bundles them (macos-dark, macos-light, rounded-dark); set individually here to
+    // tweak just one aspect of a preset. See docs/CONFIG.md.
+    wallpaper: null,
+    wallpaperDim: 0.35,
+    wallpaperBlur: 0,
+    radius: 0,
+    titlebarHeight: 0,
+    trafficLights: true,
+  },
   narration: { provider: 'none', voiceName: 'Rachel', modelId: 'eleven_v3', stability: 1.0, apiKeyEnv: 'ELEVENLABS_API_KEY' },
   captions: { enabled: true, maxCharsPerLine: 60 },
   output: { dir: 'demos' },

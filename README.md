@@ -2,16 +2,11 @@
 
 **Polished product demos — recorded by your AI agent.**
 
-No video editor. No manual screen recording. Tag a skill in Cursor or Claude Code, describe what to show, and get back a zoom-composited `.mp4` with optional voiceover and burned-in captions.
-
-The launch clip below was **produced by this repo's own [`produce-video`](skills/produce-video/SKILL.md) skill** — narrated, captioned, zero hand-editing (~60s, audio on). **Watch on YouTube** (GitHub only allows inline `<video>` from its own upload CDN — see [docs/README_VIDEO.md](docs/README_VIDEO.md)):
-
-[![Launch demo — install demo-studio, tag @produce-video, get a polished clip](docs/assets/promo-poster.png)](https://youtu.be/pDusHjg97Ng)
+Tag a skill in Cursor or Claude Code, describe what to show, and get back a zoom-composited `.mp4` with optional voiceover and burned-in captions.
 
 <video src="https://github.com/user-attachments/assets/c2baa6a0-7a12-4506-947f-77d15745fba7" controls width="900"></video>
 
-
-The preview it delivers inside that session was recorded the same way with [`film-demo`](skills/film-demo/SKILL.md):
+Launch demo (~60s, narrated + captioned) — recorded end-to-end with [`produce-video`](skills/produce-video/SKILL.md). The in-session app preview uses [`film-demo`](skills/film-demo/SKILL.md):
 
 ![hello-demo — task app recorded by film-demo](docs/assets/hello-demo.gif)
 

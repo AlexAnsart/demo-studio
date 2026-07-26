@@ -1,11 +1,5 @@
 /**
- * Smallest possible demo-studio run — records the fixture app in ./app with
- * the film-demo engine (imported directly from the skill folder since this
- * script lives inside the same repo checkout; a real project would import
- * from its vendored `demos/_engine/` copy instead — see demo-setup).
- *
- * Usage: node examples/hello-demo/run.mjs
- * Then:  node skills/film-demo/scripts/compose.mjs examples/hello-demo/renders/001 --out examples/hello-demo/output/demo.mp4
+ * hello-demo — four focus shots, minimal static pauses, macos-dark (photo-coast-aerial).
  */
 import { dirname, join } from 'path'
 import { fileURLToPath, pathToFileURL } from 'url'
@@ -14,6 +8,7 @@ import { chromium } from 'playwright'
 import { createTimeline } from '../../skills/film-demo/scripts/timeline.mjs'
 import { createFilmContext, prepareFilmPage, startFilmRecording, finishFilmRecording } from '../../skills/film-demo/scripts/record.mjs'
 import { click, type, open, focus, wide, settle } from '../../skills/film-demo/scripts/actions.mjs'
+import { pause } from '../../skills/film-demo/scripts/motion.mjs'
 
 const __dirname = dirname(fileURLToPath(import.meta.url))
 const rendersDir = join(__dirname, 'renders')
@@ -38,14 +33,35 @@ open(timeline, 'app-loaded')
 const input = page.locator('#new-task-input')
 await focus(page, timeline, input, 'composer')
 await type(page, timeline, input, 'Ship the v1 release', 'task-text')
-await click(page, timeline, page.locator('#add-btn'), 'add', { expect: page.locator('li', { hasText: 'Ship the v1 release' }) })
-await wide(page, timeline, 'list-updated')
+
+await click(page, timeline, page.locator('#priority-btn'), 'priority-high', {
+  expect: page.locator('#priority-btn .label', { hasText: 'High' }),
+})
 
 const newItem = page.locator('li', { hasText: 'Ship the v1 release' })
+await click(page, timeline, page.locator('#add-btn'), 'add', { expect: newItem })
+await wide(page, timeline, 'list-updated')
+
 await focus(page, timeline, newItem, 'new-item')
-await page.waitForTimeout(2800)
-await wide(page, timeline, 'payoff')
-await page.waitForTimeout(3800)
+await click(page, timeline, newItem.locator('.check'), 'mark-done')
+await wide(page, timeline, 'task-completed')
+
+await click(page, timeline, page.locator('.tab[data-filter="active"]'), 'filter-active', {
+  expect: page.locator('.tab.active', { hasText: 'Active' }),
+})
+await focus(page, timeline, page.locator('#list'), 'filtered-list')
+await wide(page, timeline, 'wide-before-delete')
+
+const remainingItem = page.locator('li', { hasText: 'Set up the project' })
+await click(page, timeline, remainingItem.locator('.delete'), 'delete')
+await remainingItem.waitFor({ state: 'hidden', timeout: 5000 }).catch(() => {})
+
+await click(page, timeline, page.locator('.tab[data-filter="all"]'), 'filter-all', {
+  expect: page.locator('.tab.active', { hasText: 'All' }),
+})
+await focus(page, timeline, page.locator('#list'), 'payoff')
+await pause(2500)
+await wide(page, timeline, 'outro')
 
 timeline.dump(join(renderDir, 'timeline.json'))
 const { ok, capturedFps } = await finishFilmRecording(context, page, renderDir, recorder)

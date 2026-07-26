@@ -37,7 +37,11 @@
   "frame": {
     "preset": "studio-dark",
     "canvasWidth": 1920,
-    "canvasHeight": 1080
+    "canvasHeight": 1080,
+    "wallpaper": null,
+    "radius": 0,
+    "titlebarHeight": 0,
+    "trafficLights": true
   },
 
   "narration": {

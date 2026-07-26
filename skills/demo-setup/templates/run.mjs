@@ -100,7 +100,13 @@ async function main() {
     process.exit(1)
   }
   console.log(`Recorded ${renderDir} (${rec.capturedFps} fps)`)
-  console.log(`Compose: node demos/_engine/compose.mjs ${renderDir.replace(/\\/g, '/')} --preset ${config.frame?.preset ?? 'studio-dark'}`)
+  const frame = config.frame ?? {}
+  const chromeFlags = []
+  if (frame.wallpaper) chromeFlags.push(`--wallpaper ${frame.wallpaper}`)
+  if (frame.radius) chromeFlags.push(`--radius ${frame.radius}`)
+  if (frame.titlebarHeight) chromeFlags.push(`--titlebar-height ${frame.titlebarHeight}`)
+  if (frame.trafficLights === false) chromeFlags.push('--no-traffic-lights')
+  console.log(`Compose: node demos/_engine/compose.mjs ${renderDir.replace(/\\/g, '/')} --preset ${frame.preset ?? 'studio-dark'}${chromeFlags.length ? ' ' + chromeFlags.join(' ') : ''}`)
 }
 
 main().catch((err) => {

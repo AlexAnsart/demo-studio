@@ -17,12 +17,28 @@
     color: #f2f2f0;
   }
   .card {
-    width: 640px;
+    width: 680px;
     background: #17171a;
     border: 1px solid #2a2a2e;
     border-radius: 14px;
     padding: 32px;
     box-shadow: 0 30px 80px rgba(0,0,0,0.45);
+  }
+  .rec-tick {
+    position: fixed; bottom: 8px; right: 8px; width: 3px; height: 3px;
+    border-radius: 50%; background: rgba(255,255,255,0.04);
+    animation: rec-tick 40ms linear infinite;
+  }
+  @keyframes rec-tick {
+    0%, 100% { opacity: 0.3; transform: scale(1); }
+    50% { opacity: 1; transform: scale(1.2); }
+  }
+  .header {
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    margin-bottom: 22px;
+    gap: 16px;
   }
   h1 {
     margin: 0 0 4px;
@@ -31,14 +47,37 @@
     letter-spacing: -0.01em;
   }
   p.subtitle {
-    margin: 0 0 24px;
+    margin: 0;
     color: #8b8b92;
     font-size: 14px;
   }
+
+  .tabs {
+    display: flex;
+    gap: 2px;
+    background: #0d0d0f;
+    border: 1px solid #2a2a2e;
+    border-radius: 9px;
+    padding: 3px;
+    flex: none;
+  }
+  .tab {
+    appearance: none;
+    border: none;
+    background: transparent;
+    color: #8b8b92;
+    font-size: 13px;
+    font-weight: 500;
+    padding: 6px 13px;
+    border-radius: 7px;
+    cursor: pointer;
+  }
+  .tab.active { background: #26262b; color: #f2f2f0; }
+
   .composer {
     display: flex;
-    gap: 10px;
-    margin-bottom: 24px;
+    gap: 8px;
+    margin-bottom: 22px;
   }
   #new-task-input {
     flex: 1;
@@ -49,21 +88,48 @@
     font-size: 15px;
     color: #f2f2f0;
     outline: none;
+    min-width: 0;
   }
-  #new-task-input:focus {
-    border-color: #5b8def;
+  #new-task-input:focus { border-color: #5b8def; }
+
+  .priority-chip {
+    appearance: none;
+    border: 1px solid #2f2f34;
+    border-radius: 9px;
+    padding: 0 14px;
+    font-size: 13px;
+    font-weight: 600;
+    cursor: pointer;
+    flex: none;
+    width: 92px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 6px;
+    background: #0d0d0f;
+    color: #c7c7cc;
+    transition: background 0.15s, color 0.15s, border-color 0.15s;
   }
+  .priority-chip .dot { width: 7px; height: 7px; border-radius: 50%; flex: none; }
+  .priority-chip[data-level="low"] .dot { background: #8b8b92; }
+  .priority-chip[data-level="medium"] .dot { background: #e8b85b; }
+  .priority-chip[data-level="high"] .dot { background: #ef6b7f; }
+  .priority-chip[data-level="medium"] { border-color: #4a3a1f; color: #e8b85b; }
+  .priority-chip[data-level="high"] { border-color: #4a1f28; color: #ef6b7f; }
+
   #add-btn {
     background: #5b8def;
     color: #0a0a0a;
     border: none;
     border-radius: 9px;
-    padding: 0 20px;
+    padding: 0 22px;
     font-size: 15px;
     font-weight: 600;
     cursor: pointer;
+    flex: none;
   }
   #add-btn:active { transform: scale(0.98); }
+
   ul#list {
     list-style: none;
     margin: 0;
@@ -71,6 +137,7 @@
     display: flex;
     flex-direction: column;
     gap: 8px;
+    min-height: 56px;
   }
   li {
     display: flex;
@@ -79,19 +146,89 @@
     background: #0d0d0f;
     border: 1px solid #232327;
     border-radius: 9px;
-    padding: 12px 14px;
+    padding: 11px 12px 11px 10px;
     font-size: 15px;
     animation: rise 0.25s ease-out;
   }
-  li.done { color: #6f6f76; text-decoration: line-through; }
-  li .dot {
-    width: 8px;
-    height: 8px;
+  li.hidden { display: none; }
+  li .check {
+    appearance: none;
+    width: 20px;
+    height: 20px;
     border-radius: 50%;
-    background: #5b8def;
+    border: 1.5px solid #3a3a40;
+    background: transparent;
+    flex: none;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: transparent;
+    font-size: 12px;
+    line-height: 1;
+    padding: 0;
+  }
+  li.done .check { background: #5b8def; border-color: #5b8def; color: #0a0a0a; }
+  li .text { flex: 1; min-width: 0; }
+  li.done .text { color: #6f6f76; text-decoration: line-through; }
+  .badge {
+    flex: none;
+    font-size: 11px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.03em;
+    padding: 3px 8px;
+    border-radius: 20px;
+  }
+  .badge.low { background: #232327; color: #9a9aa2; }
+  .badge.medium { background: #2e2410; color: #e8b85b; }
+  .badge.high { background: #2e1218; color: #ef6b7f; }
+  li .delete {
+    appearance: none;
+    border: none;
+    background: transparent;
+    color: #55555c;
+    font-size: 17px;
+    line-height: 1;
+    width: 22px;
+    height: 22px;
+    border-radius: 6px;
+    cursor: pointer;
     flex: none;
   }
-  li.done .dot { background: #3a3a3f; }
+  li .delete:hover { color: #ef6b7f; background: #2e1218; }
+
+  #empty-state {
+    display: none;
+    padding: 22px 0;
+    text-align: center;
+    color: #6f6f76;
+    font-size: 14px;
+  }
+
+  .footer {
+    margin-top: 20px;
+    padding-top: 16px;
+    border-top: 1px solid #232327;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+  }
+  #count { color: #8b8b92; font-size: 13px; }
+  #count strong { color: #f2f2f0; }
+  #clear-btn {
+    appearance: none;
+    border: none;
+    background: transparent;
+    color: #8b8b92;
+    font-size: 13px;
+    font-weight: 500;
+    cursor: pointer;
+    padding: 4px 8px;
+    border-radius: 6px;
+  }
+  #clear-btn:hover { color: #f2f2f0; background: #232327; }
+
   @keyframes rise {
     from { opacity: 0; transform: translateY(6px); }
     to { opacity: 1; transform: translateY(0); }
@@ -99,37 +236,127 @@
 </style>
 </head>
 <body>
+  <div class="rec-tick" aria-hidden="true"></div>
   <div class="card">
-    <h1>Tasks</h1>
-    <p class="subtitle">A tiny fixture app — used to demo the demo-studio recording engine.</p>
+    <div class="header">
+      <div>
+        <h1>Tasks</h1>
+        <p class="subtitle">A small fixture app — used to demo the demo-studio recording engine.</p>
+      </div>
+      <div class="tabs" id="tabs">
+        <button class="tab active" data-filter="all">All</button>
+        <button class="tab" data-filter="active">Active</button>
+        <button class="tab" data-filter="done">Done</button>
+      </div>
+    </div>
     <div class="composer">
       <input id="new-task-input" type="text" placeholder="Add a task…" autocomplete="off" />
+      <button id="priority-btn" class="priority-chip" data-level="medium"><span class="dot"></span><span class="label">Medium</span></button>
       <button id="add-btn">Add</button>
     </div>
     <ul id="list">
-      <li><span class="dot"></span>Set up the project</li>
-      <li class="done"><span class="dot"></span>Write the README</li>
+      <li data-priority="medium"><button class="check" aria-label="Toggle done"></button><span class="text">Set up the project</span><span class="badge medium">Medium</span><button class="delete" aria-label="Delete">&times;</button></li>
+      <li class="done" data-priority="low"><button class="check" aria-label="Toggle done">&#10003;</button><span class="text">Write the README</span><span class="badge low">Low</span><button class="delete" aria-label="Delete">&times;</button></li>
     </ul>
+    <div id="empty-state">Nothing here — add a task above.</div>
+    <div class="footer">
+      <span id="count"></span>
+      <button id="clear-btn">Clear completed</button>
+    </div>
   </div>
 
   <script>
+    const PRIORITIES = ['low', 'medium', 'high']
     const input = document.getElementById('new-task-input')
-    const btn = document.getElementById('add-btn')
+    const addBtn = document.getElementById('add-btn')
     const list = document.getElementById('list')
+    const priorityBtn = document.getElementById('priority-btn')
+    const tabs = document.getElementById('tabs')
+    const countEl = document.getElementById('count')
+    const clearBtn = document.getElementById('clear-btn')
+    const emptyState = document.getElementById('empty-state')
+
+    let filter = 'all'
+
+    function cap(s) { return s[0].toUpperCase() + s.slice(1) }
+
+    priorityBtn.addEventListener('click', () => {
+      const level = priorityBtn.dataset.level
+      const next = PRIORITIES[(PRIORITIES.indexOf(level) + 1) % PRIORITIES.length]
+      priorityBtn.dataset.level = next
+      priorityBtn.querySelector('.label').textContent = cap(next)
+    })
+
+    function makeItem(text, priority) {
+      const li = document.createElement('li')
+      li.dataset.priority = priority
+      li.innerHTML =
+        '<button class="check" aria-label="Toggle done"></button>' +
+        '<span class="text"></span>' +
+        '<span class="badge ' + priority + '">' + cap(priority) + '</span>' +
+        '<button class="delete" aria-label="Delete">&times;</button>'
+      li.querySelector('.text').textContent = text
+      return li
+    }
 
     function addTask() {
       const text = input.value.trim()
       if (!text) return
-      const li = document.createElement('li')
-      li.innerHTML = `<span class="dot"></span>${text}`
+      const li = makeItem(text, priorityBtn.dataset.level)
       list.appendChild(li)
       input.value = ''
+      applyFilter()
+      updateCount()
     }
 
-    btn.addEventListener('click', addTask)
+    function toggleDone(li) {
+      li.classList.toggle('done')
+      li.querySelector('.check').innerHTML = li.classList.contains('done') ? '&#10003;' : ''
+      applyFilter()
+      updateCount()
+    }
+
+    function applyFilter() {
+      for (const li of list.children) {
+        const done = li.classList.contains('done')
+        const show = filter === 'all' || (filter === 'active' && !done) || (filter === 'done' && done)
+        li.classList.toggle('hidden', !show)
+      }
+      const visibleCount = [...list.children].filter((li) => !li.classList.contains('hidden')).length
+      emptyState.style.display = visibleCount === 0 ? 'block' : 'none'
+    }
+
+    function updateCount() {
+      const left = [...list.children].filter((li) => !li.classList.contains('done')).length
+      countEl.innerHTML = '<strong>' + left + '</strong> task' + (left === 1 ? '' : 's') + ' left'
+    }
+
+    list.addEventListener('click', (e) => {
+      const li = e.target.closest('li')
+      if (!li) return
+      if (e.target.closest('.check')) toggleDone(li)
+      else if (e.target.closest('.delete')) {
+        li.remove()
+        applyFilter()
+        updateCount()
+      }
+    })
+
+    tabs.addEventListener('click', (e) => {
+      const btn = e.target.closest('.tab')
+      if (!btn) return
+      filter = btn.dataset.filter
+      for (const t of tabs.children) t.classList.toggle('active', t === btn)
+      applyFilter()
+    })
+
+    addBtn.addEventListener('click', addTask)
     input.addEventListener('keydown', (e) => {
       if (e.key === 'Enter') addTask()
     })
+
+    applyFilter()
+    updateCount()
   </script>
 </body>
 </html>
